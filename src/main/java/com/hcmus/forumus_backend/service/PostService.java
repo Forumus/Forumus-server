@@ -4,22 +4,28 @@ import org.springframework.stereotype.Service;
 
 import com.google.genai.types.Part;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
+import com.hcmus.forumus_backend.dto.topic.TopicResponse;
 import com.google.genai.Client;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.hcmus.forumus_backend.service.TopicService;
+import java.util.List;
 
 @Service
-public class GeminiService {
+public class PostService {
     private final Client geminiClient;
     private final GenerateContentConfig generateContentConfig;
     private final String GEMINI_MODEL_NAME = "gemini-2.5-flash";
 
-    public GeminiService(Client geminiClient, GenerateContentConfig generateContentConfig) {
+    private final TopicService topicService;
+
+    public PostService(Client geminiClient, GenerateContentConfig generateContentConfig, TopicService topicService) {
         this.geminiClient = geminiClient;
         this.generateContentConfig = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText("You are a helpful assistant for an academic forum. You should help ensure that posts adhere to community guidelines suitable for university students.")))
                 .build();
+        this.topicService = topicService;
     }
 
     public String askGemini(String prompt) {
@@ -78,5 +84,46 @@ public class GeminiService {
         return new PostValidationResponse(isValid, reasons);
     }
 
-    
+    public List<TopicResponse> extractTopics(String title, String content) {
+        List<TopicResponse> topicResponses;
+        try {
+            topicResponses = topicService.getAllTopics();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of(); // Return empty list on error
+        }
+
+        String topics = topicResponses.stream()
+                .map(TopicResponse::getName)
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("");
+
+        String prompt = """
+                Please extract at most 3 main topics from the following post. The topics must be chosen from this list: %s.
+                Respond with a comma-separated list of topics.
+
+                Here is the post:
+                Title: "%s"
+                Content: "%s"
+                """.formatted(topics, title, content);
+
+        String geminiResponse = askGemini(prompt);
+
+        String[] topicsArray = geminiResponse.split(",");
+        for (int i = 0; i < topicsArray.length; i++) {
+            topicsArray[i] = topicsArray[i].trim();
+        }
+
+        return topicResponses.stream()
+                .filter(topic -> {
+                    for (String t : topicsArray) {
+                        if (topic.getName().equalsIgnoreCase(t)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .limit(3)
+                .toList();
+    }
 }

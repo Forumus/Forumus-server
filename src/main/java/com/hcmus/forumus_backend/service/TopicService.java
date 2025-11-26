@@ -46,12 +46,18 @@ public class TopicService {
         try {
             for (TopicRequest topicRequest : topicRequests) {
                 String topicId = generateTopicId(topicRequest.getName());
+                TopicResponse topicResponse = new TopicResponse(
+                        topicId,
+                        topicRequest.getName(),
+                        topicRequest.getDescription()
+                );
+
                 if (topicId == null || topicId.isEmpty())
                     continue;
 
                 ApiFuture<WriteResult> future = db.collection("topics")
                         .document(topicId)
-                        .set(topicRequest);
+                        .set(topicResponse);
                 System.out.println("Update time : " + future.get().getUpdateTime());
             }
             return true;
