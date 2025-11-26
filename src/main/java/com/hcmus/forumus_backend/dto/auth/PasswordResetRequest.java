@@ -1,4 +1,4 @@
-package com.hcmus.forumus_backend.dto;
+package com.hcmus.forumus_backend.dto.auth;
 
 public class PasswordResetRequest {
     private String secretKey;

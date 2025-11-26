@@ -3,8 +3,9 @@ package com.hcmus.forumus_backend.controller;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
-import com.hcmus.forumus_backend.dto.PasswordResetRequest;
-import com.hcmus.forumus_backend.dto.PasswordResetResponse;
+import com.hcmus.forumus_backend.dto.auth.PasswordResetRequest;
+import com.hcmus.forumus_backend.dto.auth.PasswordResetResponse;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api")
 @CrossOrigin
-public class PasswordResetController {
+public class AuthController {
 
     @Value("${admin.secret.key}")
     private String adminSecretKey;
