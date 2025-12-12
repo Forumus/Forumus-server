@@ -34,4 +34,3 @@ build/
 
 service_account.json
 application.properties
-.mvn/

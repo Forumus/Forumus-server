@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hcmus.forumus_backend.dto.GeminiAskResponse;
+import com.hcmus.forumus_backend.dto.post.PostIdRequest;
+import com.hcmus.forumus_backend.dto.post.PostDTO;
 import com.hcmus.forumus_backend.dto.post.PostValidationRequest;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
 import com.hcmus.forumus_backend.dto.topic.TopicResponse;
@@ -33,8 +35,20 @@ public class PostController {
     }
 
     @PostMapping("/validatePost")
-    public PostValidationResponse validatePost(@RequestBody PostValidationRequest request) {
-        return PostService.validatePost(request.getTitle(), request.getContent());
+    public PostValidationResponse validatePost(@RequestBody PostIdRequest request) {
+        try {
+            PostDTO post = PostService.getPostById(request.getPostId());
+            if (post == null) {
+                return new PostValidationResponse(false, "Post not found");
+            }
+            PostValidationResponse validationResponse = PostService.validatePost(post.getTitle(), post.getContent());
+
+            PostService.updatePostStatus(request.getPostId(), validationResponse.isValid() ? "APPROVED" : "REJECTED");
+            return validationResponse;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new PostValidationResponse(false, "Error fetching post: " + e.getMessage());
+        }
     }
 
     @PostMapping("/extractTopics")
