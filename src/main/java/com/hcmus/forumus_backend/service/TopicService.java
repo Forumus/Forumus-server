@@ -5,7 +5,6 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
-import com.google.firebase.cloud.FirestoreClient;
 import com.hcmus.forumus_backend.dto.topic.TopicRequest;
 import com.hcmus.forumus_backend.dto.topic.TopicResponse;
 
@@ -19,8 +18,8 @@ import java.util.concurrent.ExecutionException;
 public class TopicService {
     private final Firestore db;
 
-    public TopicService() {
-        this.db = FirestoreClient.getFirestore();
+    public TopicService(Firestore db) {
+        this.db = db;
     }
 
     public List<TopicResponse> getAllTopics() throws ExecutionException, InterruptedException {

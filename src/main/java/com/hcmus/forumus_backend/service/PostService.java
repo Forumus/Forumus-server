@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
-import com.google.firebase.cloud.FirestoreClient;
 import com.google.genai.types.Part;
 import com.hcmus.forumus_backend.dto.post.PostDTO;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
@@ -35,13 +34,13 @@ public class PostService {
     private final Firestore db;
     private final ObjectMapper objectMapper;
 
-    public PostService(Client geminiClient, GenerateContentConfig generateContentConfig, TopicService topicService) {
+    public PostService(Client geminiClient, GenerateContentConfig generateContentConfig, TopicService topicService, Firestore db) {
         this.geminiClient = geminiClient;
         this.generateContentConfig = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText(instructionPrompt)))
                 .build();
         this.topicService = topicService;
-        this.db = FirestoreClient.getFirestore();
+        this.db = db;
         this.objectMapper = new ObjectMapper();
     }
 
