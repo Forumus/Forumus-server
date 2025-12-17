@@ -58,44 +58,44 @@ public class TopicsListener {
 
     private void startListening() {
         listenerRegistration = firestore.collection("topics")
-                .addSnapshotListener((querySnapshot, error) -> {
-                    if (error != null) {
-                        logger.error("Error listening to topics collection", error);
-                        return;
-                    }
+            .addSnapshotListener((querySnapshot, error) -> {
+                if (error != null) {
+                    logger.error("Error listening to topics collection", error);
+                    return;
+                }
 
-                    if (querySnapshot != null) {
-                        for (DocumentChange change : querySnapshot.getDocumentChanges()) {
-                            QueryDocumentSnapshot document = change.getDocument();
-                            String topicId = document.getId();
+                if (querySnapshot != null) {
+                    for (DocumentChange change : querySnapshot.getDocumentChanges()) {
+                        QueryDocumentSnapshot document = change.getDocument();
+                        String topicId = document.getId();
 
-                            switch (change.getType()) {
-                                case ADDED:
-                                    TopicResponse newTopic = new TopicResponse(
-                                            topicId,
-                                            document.getString("name"),
-                                            document.getString("description"));
-                                    topicsCache.put(topicId, newTopic);
-                                    logger.info("Topic added to cache: {}", topicId);
-                                    break;
+                        switch (change.getType()) {
+                            case ADDED:
+                                TopicResponse newTopic = new TopicResponse(
+                                        topicId,
+                                        document.getString("name"),
+                                        document.getString("description"));
+                                topicsCache.put(topicId, newTopic);
+                                logger.info("Topic added to cache: {}", topicId);
+                                break;
 
-                                case MODIFIED:
-                                    TopicResponse modifiedTopic = new TopicResponse(
-                                            topicId,
-                                            document.getString("name"),
-                                            document.getString("description"));
-                                    topicsCache.put(topicId, modifiedTopic);
-                                    logger.info("Topic updated in cache: {}", topicId);
-                                    break;
+                            case MODIFIED:
+                                TopicResponse modifiedTopic = new TopicResponse(
+                                        topicId,
+                                        document.getString("name"),
+                                        document.getString("description"));
+                                topicsCache.put(topicId, modifiedTopic);
+                                logger.info("Topic updated in cache: {}", topicId);
+                                break;
 
-                                case REMOVED:
-                                    topicsCache.remove(topicId);
-                                    logger.info("Topic removed from cache: {}", topicId);
-                                    break;
-                            }
+                            case REMOVED:
+                                topicsCache.remove(topicId);
+                                logger.info("Topic removed from cache: {}", topicId);
+                                break;
                         }
                     }
-                });
+                }
+            });
 
         logger.info("Topics listener started successfully");
     }
