@@ -1,6 +1,6 @@
 package com.hcmus.forumus_backend.controller;
 
-import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,7 +10,6 @@ import com.hcmus.forumus_backend.dto.post.PostIdRequest;
 import com.hcmus.forumus_backend.dto.post.PostDTO;
 import com.hcmus.forumus_backend.dto.post.PostValidationRequest;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
-import com.hcmus.forumus_backend.dto.topic.TopicResponse;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,8 +50,8 @@ public class PostController {
         }
     }
 
-    @PostMapping("/extractTopics")
-    public List<TopicResponse> extractTopics(@RequestBody PostValidationRequest request) {
+    @PostMapping("/getSuggestedTopics")
+    public Map<String, Object> extractTopics(@RequestBody PostValidationRequest request) {
         return PostService.extractTopics(request.getTitle(), request.getContent());
     }
 }

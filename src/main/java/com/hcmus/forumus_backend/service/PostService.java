@@ -10,11 +10,13 @@ import com.hcmus.forumus_backend.dto.post.PostDTO;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
 import com.hcmus.forumus_backend.dto.topic.TopicResponse;
 import com.hcmus.forumus_backend.enums.PostStatus;
+import com.hcmus.forumus_backend.listener.TopicsListener;
 import com.google.genai.Client;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,15 +33,18 @@ public class PostService {
             """;
 
     private final TopicService topicService;
+    private final TopicsListener topicsListener;
     private final Firestore db;
     private final ObjectMapper objectMapper;
 
-    public PostService(Client geminiClient, GenerateContentConfig generateContentConfig, TopicService topicService, Firestore db) {
+    public PostService(Client geminiClient, GenerateContentConfig generateContentConfig, TopicService topicService,
+            TopicsListener topicsListener, Firestore db) {
         this.geminiClient = geminiClient;
         this.generateContentConfig = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText(instructionPrompt)))
                 .build();
         this.topicService = topicService;
+        this.topicsListener = topicsListener;
         this.db = db;
         this.objectMapper = new ObjectMapper();
     }
@@ -145,14 +150,8 @@ public class PostService {
         return new PostValidationResponse(isValid, reasons);
     }
 
-    public List<TopicResponse> extractTopics(String title, String content) {
-        List<TopicResponse> topicResponses;
-        try {
-            topicResponses = topicService.getAllTopics();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return List.of(); // Return empty list on error
-        }
+    public Map<String, Object> extractTopics(String title, String content) {
+        List<TopicResponse> topicResponses = topicsListener.getAllTopics();
 
         String topics = topicResponses.stream()
                 .map(TopicResponse::getName)
@@ -161,7 +160,7 @@ public class PostService {
 
         String prompt = """
                 Please extract at most 3 main topics from the following post. The topics must be chosen from this list: %s.
-                Respond with a JSON object in this format: {"topics": ["topic1", "topic2", "topic3"]}
+                Respond with a JSON object in this format: {"topics": ["topic_name_1", "topic_name_2", "topic_name_3"]}
 
                 Here is the post:
                 Title: "%s"
@@ -188,19 +187,23 @@ public class PostService {
             topicsArray = topicsList.toArray(new String[0]);
         } catch (Exception e) {
             e.printStackTrace();
-            return List.of();
+            return Map.of(
+                    "success", false,
+                    "topics", List.of());
         }
 
-        return topicResponses.stream()
-                .filter(topic -> {
-                    for (String t : topicsArray) {
-                        if (topic.getName().equalsIgnoreCase(t)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                })
-                .limit(3)
-                .toList();
+        return Map.of(
+                "success", true,
+                "topics", topicResponses.stream()
+                        .filter(topic -> {
+                            for (String t : topicsArray) {
+                                if (topic.getName().equalsIgnoreCase(t)) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        })
+                        .limit(3)
+                        .toList());
     }
 }

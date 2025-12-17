@@ -1,44 +1,40 @@
 package com.hcmus.forumus_backend.service;
 
+import java.util.Map;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
-import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteResult;
 import com.hcmus.forumus_backend.dto.topic.TopicRequest;
 import com.hcmus.forumus_backend.dto.topic.TopicResponse;
+import com.hcmus.forumus_backend.listener.TopicsListener;
 
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @Service
 public class TopicService {
     private final Firestore db;
+    private final TopicsListener topicsListener;
 
-    public TopicService(Firestore db) {
+    public TopicService(Firestore db, TopicsListener topicsListener) {
         this.db = db;
+        this.topicsListener = topicsListener;
     }
 
-    public List<TopicResponse> getAllTopics() throws ExecutionException, InterruptedException {
-        ApiFuture<QuerySnapshot> future = this.db.collection("topics").get();
-        QuerySnapshot querySnapshot = future.get();
+    public Map<String, Object> getAllTopics() {
+        try {
+            List<TopicResponse> topics = topicsListener.getAllTopics();
 
-        List<TopicResponse> topics = new ArrayList<>();
-
-        for (QueryDocumentSnapshot document : querySnapshot.getDocuments()) {
-            TopicResponse topic = new TopicResponse(
-                    document.getString("topic_id"),
-                    document.getString("name"),
-                    document.getString("description"));
-            topics.add(topic);
+            return Map.of(
+                    "success", true,
+                    "topics", topics);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Map.of(
+                    "success", false,
+                    "topics", List.of());
         }
-
-        System.out.println("Fetched Topics: " + topics);
-
-        return topics;
     }
 
     public boolean addTopic(List<TopicRequest> topicRequests) {
@@ -48,8 +44,7 @@ public class TopicService {
                 TopicResponse topicResponse = new TopicResponse(
                         topicId,
                         topicRequest.getName(),
-                        topicRequest.getDescription()
-                );
+                        topicRequest.getDescription());
 
                 if (topicId == null || topicId.isEmpty())
                     continue;

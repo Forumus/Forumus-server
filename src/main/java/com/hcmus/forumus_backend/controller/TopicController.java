@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
 
 import com.hcmus.forumus_backend.dto.topic.TopicRequest;
-import com.hcmus.forumus_backend.dto.topic.TopicResponse;
 import com.hcmus.forumus_backend.service.TopicService;
 
 @RestController
@@ -26,13 +25,8 @@ public class TopicController {
     }
 
     @GetMapping("/getAll")
-    public List<TopicResponse> getAllTopics() {
-        try {
-            return TopicService.getAllTopics();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return List.of(); // Return empty list on error
-        }
+    public Map<String, Object> getAllTopics() {
+        return TopicService.getAllTopics();
     }
 
     @PostMapping("/add")
