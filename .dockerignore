@@ -1,0 +1,39 @@
+# Target directory
+target/
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+HELP.md
+
+# Maven wrapper (already in image)
+.mvn/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment files (will be passed at runtime)
+.env
+.env.*
+
+# Test files
+src/test/

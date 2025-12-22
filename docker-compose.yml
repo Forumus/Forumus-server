@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  forumus-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: forumus-backend
+    ports:
+      - "${SERVER_PORT:-8081}:8080"  # Changed to 8081 to avoid conflict with local app
+    env_file:
+      - .env
+      
+    volumes:
+      # Mount Firebase service account file to classpath location
+      # Spring Boot looks for 'classpath:service_account.json' which translates to
+      # /app/BOOT-INF/classes/service_account.json in the packaged JAR
+      - ./src/main/resources/service_account.json:/app/BOOT-INF/classes/service_account.json:ro
+      
+    restart: unless-stopped
+    
+    # Health check (requires Spring Boot Actuator)
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health || exit 0"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    
+    networks:
+      - forumus-network
+
+networks:
+  forumus-network:
+    driver: bridge

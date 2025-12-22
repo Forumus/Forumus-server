@@ -32,5 +32,13 @@ build/
 ### VS Code ###
 .vscode/
 
+### Sensitive Configuration Files ###
 service_account.json
-application.properties
+
+### Docker ###
+.env
+.env.local
+.env.*.local
+
+### Generated docs ###
+/docs
