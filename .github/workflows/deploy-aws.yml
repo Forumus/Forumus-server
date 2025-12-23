@@ -29,7 +29,7 @@ jobs:
           echo "🚀 Starting deployment..."
           
           # Navigate to project directory
-          cd ~/forumus_backend || exit 1
+          cd ~/forumus-backend || exit 1
           
           # Pull latest changes
           echo "📥 Pulling latest changes from DockerHub..."
