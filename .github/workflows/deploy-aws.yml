@@ -39,9 +39,9 @@ jobs:
           echo "🛑 Stopping current containers..."
           docker-compose down
           
-          # Start containers
-          echo "🔨 Starting containers..."
-          docker-compose up -d
+          # Rebuild and start containers
+          echo "🔨 Rebuilding and starting containers..."
+          docker-compose up -d --build
           
           # Wait for container to start
           echo "⏳ Waiting for container to start..."
@@ -61,7 +61,7 @@ jobs:
           MAX_RETRIES=5
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if curl -f http://localhost:8081/actuator/health 2>/dev/null; then
+            if curl -f http://localhost:8081/api/health 2>/dev/null; then
               echo "✅ Application is healthy!"
               exit 0
             else
