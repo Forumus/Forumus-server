@@ -30,14 +30,14 @@ jobs:
           
           # Navigate to project directory
           cd ~/forumus-backend || exit 1
+
+          # Stop current containers
+          echo "🛑 Stopping current containers..."
+          docker-compose down
           
           # Pull latest changes
           echo "📥 Pulling latest changes from DockerHub..."
           docker-compose pull longtoz/forumus-backend:latest
-          
-          # Stop current containers
-          echo "🛑 Stopping current containers..."
-          docker-compose down
           
           # Rebuild and start containers
           echo "🔨 Rebuilding and starting containers..."
