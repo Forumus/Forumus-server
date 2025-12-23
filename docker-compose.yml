@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: forumus-backend
     ports:
-      - "${SERVER_PORT:-8081}:8080"  # Changed to 8081 to avoid conflict with local app
+      - "8081:3000"  # Changed to 8081 to avoid conflict with local app
     env_file:
       - .env
       
