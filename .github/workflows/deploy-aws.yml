@@ -1,0 +1,86 @@
+name: Deploy to AWS EC2
+
+on:
+  workflow_run:
+    workflows: ["Docker Build and Push"] # Must match the 'name' in docker-build.yml
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  deploy:
+    name: Deploy Spring Boot Backend
+    runs-on: ubuntu-latest
+    # Only run if the triggering workflow actually succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        script: |
+          echo "🚀 Starting deployment..."
+          
+          # Navigate to project directory
+          cd ~/forumus-backend || exit 1
+
+          # Stop current containers
+          echo "🛑 Stopping current containers..."
+          docker-compose down
+          
+          # Pull latest changes
+          echo "📥 Pulling latest changes from DockerHub..."
+          docker-compose pull longtoz/forumus-backend:latest
+          
+          # Rebuild and start containers
+          echo "🔨 Rebuilding and starting containers..."
+          docker-compose up -d --build
+          
+          # Wait for container to start
+          echo "⏳ Waiting for container to start..."
+          sleep 15
+          
+          # Check container status
+          echo "📊 Container status:"
+          docker-compose ps
+          
+          # Show recent logs
+          echo "📝 Recent logs:"
+          docker-compose logs --tail=30 forumus-backend
+          
+          # Health check
+          echo "🏥 Performing health check..."
+          RETRY_COUNT=0
+          MAX_RETRIES=5
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -f http://localhost:8081/api/health 2>/dev/null; then
+              echo "✅ Application is healthy!"
+              exit 0
+            else
+              echo "⏳ Waiting for application to be ready... (Attempt $((RETRY_COUNT+1))/$MAX_RETRIES)"
+              sleep 10
+              RETRY_COUNT=$((RETRY_COUNT+1))
+            fi
+          done
+          
+          echo "❌ Health check failed after $MAX_RETRIES attempts"
+          echo "📝 Full logs:"
+          docker-compose logs forumus-backend
+          exit 1
+          
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Deployment completed successfully!"
+        else
+          echo "❌ Deployment failed. Check the logs above."
+        fi

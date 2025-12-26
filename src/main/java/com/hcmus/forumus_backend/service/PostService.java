@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 public class PostService {
@@ -32,7 +35,6 @@ public class PostService {
             You should answer in the language of the user's prompt.
             """;
 
-    private final TopicService topicService;
     private final TopicsListener topicsListener;
     private final Firestore db;
     private final ObjectMapper objectMapper;
@@ -43,7 +45,6 @@ public class PostService {
         this.generateContentConfig = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText(instructionPrompt)))
                 .build();
-        this.topicService = topicService;
         this.topicsListener = topicsListener;
         this.db = db;
         this.objectMapper = new ObjectMapper();
@@ -89,26 +90,38 @@ public class PostService {
     }
 
     public String askGemini(String prompt) {
-        GenerateContentResponse response = geminiClient.models.generateContent(
-                GEMINI_MODEL_NAME,
-                prompt,
-                generateContentConfig);
+        try {
+            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+                GenerateContentResponse response = geminiClient.models.generateContent(
+                        GEMINI_MODEL_NAME,
+                        prompt,
+                        generateContentConfig);
 
-        String responseJson = response.toJson();
-        System.out.println("Gemini Response: " + responseJson);
+                String responseJson = response.toJson();
+                System.out.println("Gemini Response: " + responseJson);
 
-        // Extract text content from the response
-        if (response.candidates().isPresent() && !response.candidates().get().isEmpty()) {
-            var candidate = response.candidates().get().get(0);
-            if (candidate.content().isPresent() && candidate.content().get().parts().isPresent()) {
-                var parts = candidate.content().get().parts().get();
-                if (!parts.isEmpty() && parts.get(0).text().isPresent()) {
-                    return parts.get(0).text().get();
+                // Extract text content from the response
+                if (response.candidates().isPresent() && !response.candidates().get().isEmpty()) {
+                    var candidate = response.candidates().get().get(0);
+                    if (candidate.content().isPresent() && candidate.content().get().parts().isPresent()) {
+                        var parts = candidate.content().get().parts().get();
+                        if (!parts.isEmpty() && parts.get(0).text().isPresent()) {
+                            return parts.get(0).text().get();
+                        }
+                    }
                 }
-            }
-        }
 
-        return responseJson;
+                return responseJson;
+            });
+
+            return future.get(60, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            System.err.println("Gemini request timed out after 60 seconds");
+            throw new RuntimeException("AI response timeout - request exceeded 60 seconds", e);
+        } catch (Exception e) {
+            System.err.println("Error calling Gemini API: " + e.getMessage());
+            throw new RuntimeException("Error calling AI service: " + e.getMessage(), e);
+        }
     }
 
     public PostValidationResponse validatePost(String title, String content) {
