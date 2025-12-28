@@ -37,7 +37,7 @@ jobs:
           
           # Pull latest changes
           echo "📥 Pulling latest changes from DockerHub..."
-          docker-compose pull longtoz/forumus-backend:latest
+          docker pull longtoz/forumus-backend:latest
           
           # Rebuild and start containers
           echo "🔨 Rebuilding and starting containers..."

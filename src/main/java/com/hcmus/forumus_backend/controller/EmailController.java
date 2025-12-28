@@ -3,6 +3,8 @@ package com.hcmus.forumus_backend.controller;
 import com.hcmus.forumus_backend.dto.email.EmailRequest;
 import com.hcmus.forumus_backend.dto.email.EmailResponse;
 import com.hcmus.forumus_backend.dto.email.WelcomeEmailRequest;
+import com.hcmus.forumus_backend.dto.email.ReportEmailRequest;
+import com.hcmus.forumus_backend.enums.UserStatus;
 import com.hcmus.forumus_backend.service.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -86,6 +88,57 @@ public class EmailController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(EmailResponse.error("Error sending welcome email: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Send report email about user's account status
+     * POST /api/email/send-report
+     *
+     * @param request ReportEmailRequest containing recipientEmail, userName,
+     *                userStatus, and reportedPosts
+     * @return EmailResponse with success status and message
+     */
+    @PostMapping("/send-report")
+    public ResponseEntity<EmailResponse> sendReportEmail(@RequestBody ReportEmailRequest request) {
+        // Validate input
+        if (request.getRecipientEmail() == null || request.getRecipientEmail().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(EmailResponse.error("Recipient email is required"));
+        }
+
+        if (request.getUserName() == null || request.getUserName().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(EmailResponse.error("User name is required"));
+        }
+
+        if (request.getUserStatus() == null || request.getUserStatus().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(EmailResponse.error("User status is required"));
+        }
+
+        try {
+            // Parse user status
+            UserStatus userStatus = UserStatus.fromString(request.getUserStatus());
+
+            boolean sent = emailService.sendReportEmail(
+                    request.getRecipientEmail(),
+                    request.getUserName(),
+                    userStatus,
+                    request.getReportedPosts());
+
+            if (sent) {
+                return ResponseEntity.ok(EmailResponse.success("Report email sent successfully"));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(EmailResponse.error("Failed to send report email"));
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(EmailResponse.error("Invalid user status: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(EmailResponse.error("Error sending report email: " + e.getMessage()));
         }
     }
 }
