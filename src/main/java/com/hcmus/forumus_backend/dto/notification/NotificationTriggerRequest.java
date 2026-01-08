@@ -7,17 +7,21 @@ public class NotificationTriggerRequest {
     private String targetId; // Post ID or Comment ID
     private String targetUserId; // The user to notify
     private String previewText; // Snippet of post title or comment
+    private String originalPostTitle;
+    private String originalPostContent;
 
     public NotificationTriggerRequest() {
     }
 
-    public NotificationTriggerRequest(String type, String actorId, String actorName, String targetId, String targetUserId, String previewText) {
+    public NotificationTriggerRequest(String type, String actorId, String actorName, String targetId, String targetUserId, String previewText, String originalPostTitle, String originalPostContent) {
         this.type = type;
         this.actorId = actorId;
         this.actorName = actorName;
         this.targetId = targetId;
         this.targetUserId = targetUserId;
         this.previewText = previewText;
+        this.originalPostTitle = originalPostTitle;
+        this.originalPostContent = originalPostContent;
     }
 
     public String getType() {
@@ -66,5 +70,21 @@ public class NotificationTriggerRequest {
 
     public void setPreviewText(String previewText) {
         this.previewText = previewText;
+    }
+
+    public String getOriginalPostTitle() {
+        return originalPostTitle;
+    }
+
+    public void setOriginalPostTitle(String originalPostTitle) {
+        this.originalPostTitle = originalPostTitle;
+    }
+
+    public String getOriginalPostContent() {
+        return originalPostContent;
+    }
+
+    public void setOriginalPostContent(String originalPostContent) {
+        this.originalPostContent = originalPostContent;
     }
 }

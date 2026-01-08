@@ -62,6 +62,13 @@ public class NotificationService {
             notificationData.put("previewText", request.getPreviewText());
             notificationData.put("createdAt", Timestamp.now());
             notificationData.put("isRead", false);
+            
+            if (request.getOriginalPostTitle() != null) {
+                notificationData.put("originalPostTitle", request.getOriginalPostTitle());
+            }
+            if (request.getOriginalPostContent() != null) {
+                notificationData.put("originalPostContent", request.getOriginalPostContent());
+            }
 
             // 4. Write to Firestore: users/{targetUserId}/notifications/{notificationId}
             db.collection("users")
