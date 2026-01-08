@@ -9,7 +9,6 @@ import com.google.genai.types.Part;
 import com.hcmus.forumus_backend.dto.post.PostDTO;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
 import com.hcmus.forumus_backend.dto.topic.TopicResponse;
-import com.hcmus.forumus_backend.enums.PostStatus;
 import com.hcmus.forumus_backend.listener.TopicsListener;
 import com.google.genai.Client;
 import com.google.genai.types.Content;
@@ -60,11 +59,12 @@ public class PostService {
                 .get();
         DocumentSnapshot document = future.get();
 
-        if (document.exists() && PostStatus.PENDING.getValue().equals(document.getString("status"))) {
+        if (document.exists()) {
             PostDTO post = new PostDTO(
                     postId,
                     document.getString("title"),
-                    document.getString("content"));
+                    document.getString("content"),
+                    document.getString("authorId"));
             return post;
         }
         return null;

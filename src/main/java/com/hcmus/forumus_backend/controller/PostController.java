@@ -22,9 +22,11 @@ import com.hcmus.forumus_backend.service.PostService;
 public class PostController {
 
     private final PostService PostService;
+    private final com.hcmus.forumus_backend.service.NotificationService notificationService;
 
-    public PostController(PostService PostService) {
+    public PostController(PostService PostService, com.hcmus.forumus_backend.service.NotificationService notificationService) {
         this.PostService = PostService;
+        this.notificationService = notificationService;
     }
 
     @PostMapping("/askGemini")
@@ -36,19 +38,54 @@ public class PostController {
     @PostMapping("/validatePost")
     public PostValidationResponse validatePost(@RequestBody PostIdRequest request) {
         try {
+            System.out.println("Validating Post ID: " + request.getPostId());
             PostDTO post = PostService.getPostById(request.getPostId());
             if (post == null) {
+                System.out.println("Post not found for ID: " + request.getPostId());
                 return new PostValidationResponse(false, "Post not found");
             }
+            System.out.println("Post found. Title: " + post.getTitle() + ", AuthorID: " + post.getAuthorId());
+            
             PostValidationResponse validationResponse = PostService.validatePost(post.getTitle(), post.getContent());
+            System.out.println("Validation Result: " + validationResponse.isValid());
 
-            PostService.updatePostStatus(request.getPostId(), validationResponse.isValid() ? "APPROVED" : "REJECTED");
+            if (validationResponse.isValid()) {
+                PostService.updatePostStatus(request.getPostId(), "APPROVED");
+            } else {
+                PostService.updatePostStatus(request.getPostId(), "REJECTED");
+                System.out.println("Post Rejected. Triggering notification for Author: " + post.getAuthorId());
+                
+                // Trigger rejection notification
+                com.hcmus.forumus_backend.dto.notification.NotificationTriggerRequest notificationRequest = 
+                    new com.hcmus.forumus_backend.dto.notification.NotificationTriggerRequest();
+                
+                notificationRequest.setType("POST_REJECTED");
+                notificationRequest.setTargetUserId(post.getAuthorId()); // Now available
+                notificationRequest.setTargetId(post.getPostId());
+                notificationRequest.setOriginalPostTitle(post.getTitle());
+                notificationRequest.setOriginalPostContent(post.getContent());
+                notificationRequest.setPreviewText(post.getTitle()); 
+                notificationRequest.setRejectionReason(validationResponse.getMessage());
+                // Actor can be "System" or "AI Verification"
+                notificationRequest.setActorName("Verification System");
+                notificationRequest.setActorId("system_ai");
+
+                try {
+                    notificationService.triggerNotification(notificationRequest);
+                    System.out.println("Notification trigger called successfully.");
+                } catch (Exception e) {
+                    System.err.println("Error triggering notification: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
             return validationResponse;
         } catch (Exception e) {
             e.printStackTrace();
             return new PostValidationResponse(false, "Error fetching post: " + e.getMessage());
         }
     }
+    
+    // ... (rest of file)
 
     @PostMapping("/getSuggestedTopics")
     public Map<String, Object> extractTopics(@RequestBody PostValidationRequest request) {

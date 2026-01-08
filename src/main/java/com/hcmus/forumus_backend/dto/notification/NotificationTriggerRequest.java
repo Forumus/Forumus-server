@@ -9,11 +9,12 @@ public class NotificationTriggerRequest {
     private String previewText; // Snippet of post title or comment
     private String originalPostTitle;
     private String originalPostContent;
+    private String rejectionReason;
 
     public NotificationTriggerRequest() {
     }
 
-    public NotificationTriggerRequest(String type, String actorId, String actorName, String targetId, String targetUserId, String previewText, String originalPostTitle, String originalPostContent) {
+    public NotificationTriggerRequest(String type, String actorId, String actorName, String targetId, String targetUserId, String previewText, String originalPostTitle, String originalPostContent, String rejectionReason) {
         this.type = type;
         this.actorId = actorId;
         this.actorName = actorName;
@@ -22,6 +23,7 @@ public class NotificationTriggerRequest {
         this.previewText = previewText;
         this.originalPostTitle = originalPostTitle;
         this.originalPostContent = originalPostContent;
+        this.rejectionReason = rejectionReason;
     }
 
     public String getType() {
@@ -86,5 +88,13 @@ public class NotificationTriggerRequest {
 
     public void setOriginalPostContent(String originalPostContent) {
         this.originalPostContent = originalPostContent;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

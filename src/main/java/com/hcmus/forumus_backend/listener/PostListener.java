@@ -26,6 +26,9 @@ public class PostListener {
 
     @Autowired
     private PostService postService;
+    
+    @Autowired
+    private com.hcmus.forumus_backend.service.NotificationService notificationService;
 
     private ListenerRegistration listenerRegistration;
     private boolean isInitialSnapshot = true;
@@ -76,6 +79,7 @@ public class PostListener {
             String title = document.getString("title");
             String content = document.getString("content");
             String status = document.getString("status");
+            String authorId = document.getString("authorId");
 
             logger.info("New post added: {} with status: {}", postId, status);
 
@@ -100,6 +104,24 @@ public class PostListener {
 
             logger.info("Post {} validation complete - Status: {}, Reasons: {}",
                     postId, newStatus, validationResponse.getMessage());
+            
+            if ("REJECTED".equals(newStatus)) {
+                logger.info("Post rejected by Listener. Triggering notification for author: {}", authorId);
+                com.hcmus.forumus_backend.dto.notification.NotificationTriggerRequest notificationRequest = 
+                    new com.hcmus.forumus_backend.dto.notification.NotificationTriggerRequest();
+                
+                notificationRequest.setType("POST_REJECTED");
+                notificationRequest.setTargetUserId(authorId);
+                notificationRequest.setTargetId(postId);
+                notificationRequest.setOriginalPostTitle(title);
+                notificationRequest.setOriginalPostContent(content);
+                notificationRequest.setPreviewText(title); 
+                notificationRequest.setRejectionReason(validationResponse.getMessage());
+                notificationRequest.setActorName("Verification System");
+                notificationRequest.setActorId("system_ai");
+
+                notificationService.triggerNotification(notificationRequest);
+            }
 
         } catch (Exception e) {
             logger.error("Error handling new post", e);

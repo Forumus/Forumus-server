@@ -4,14 +4,16 @@ public class PostDTO {
     private String postId;
     private String title;
     private String content;
+    private String authorId;
 
     public PostDTO() {
     }
 
-    public PostDTO(String postId, String title, String content) {
+    public PostDTO(String postId, String title, String content, String authorId) {
         this.postId = postId;
         this.title = title;
         this.content = content;
+        this.authorId = authorId;
     }
 
     public String getPostId() {
@@ -36,6 +38,14 @@ public class PostDTO {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getAuthorId() {
+        return authorId;
+    }
+
+    public void setAuthorId(String authorId) {
+        this.authorId = authorId;
     }
 
     

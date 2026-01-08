@@ -30,6 +30,8 @@ public class NotificationService {
 
     public boolean triggerNotification(NotificationTriggerRequest request) {
         try {
+            logger.info("Triggering notification for type: {}, TargetUser: {}", request.getType(), request.getTargetUserId());
+            
             // 1. Validate inputs
             if (request.getTargetUserId() == null || request.getTargetUserId().isEmpty()) {
                 logger.warn("Notification validation failed: targetUserId is missing");
@@ -69,6 +71,11 @@ public class NotificationService {
             if (request.getOriginalPostContent() != null) {
                 notificationData.put("originalPostContent", request.getOriginalPostContent());
             }
+            if (request.getRejectionReason() != null) {
+                notificationData.put("rejectionReason", request.getRejectionReason());
+            }
+
+            logger.info("Writing notification to Firestore: users/{}/notifications/{}", request.getTargetUserId(), notificationId);
 
             // 4. Write to Firestore: users/{targetUserId}/notifications/{notificationId}
             db.collection("users")
@@ -83,6 +90,7 @@ public class NotificationService {
             if (targetUser.getFcmToken() != null && !targetUser.getFcmToken().isEmpty()) {
                 String title = generateNotificationTitle(request);
                 String body = generateNotificationBody(request);
+                logger.info("Sending FCM. Title: {}, Body: {}", title, body);
 
                 Map<String, String> data = new HashMap<>();
                 data.put("type", "general_notification");
