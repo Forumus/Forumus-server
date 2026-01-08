@@ -108,6 +108,9 @@ public class NotificationService {
             case "UPVOTE" -> "New Upvote";
             case "COMMENT" -> "New Comment";
             case "REPLY" -> "New Reply";
+            case "POST_DELETED" -> "Post Removed";
+            case "POST_REJECTED" -> "Post Rejected";
+            case "STATUS_CHANGED" -> "Account Status Update";
             default -> "New Notification";
         };
     }
@@ -115,6 +118,12 @@ public class NotificationService {
     private String generateNotificationBody(NotificationTriggerRequest request) {
         String actor = request.getActorName() != null ? request.getActorName() : "Someone";
         String preview = request.getPreviewText() != null ? request.getPreviewText() : "";
+        if (request.getType().equals("POST_DELETED") || 
+            request.getType().equals("POST_REJECTED") || 
+            request.getType().equals("STATUS_CHANGED")) {
+            return preview;
+        }
+
         if (preview.length() > 50) preview = preview.substring(0, 50) + "...";
 
         return switch (request.getType()) {
