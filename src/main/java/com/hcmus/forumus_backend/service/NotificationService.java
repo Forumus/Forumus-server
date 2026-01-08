@@ -118,6 +118,7 @@ public class NotificationService {
             case "REPLY" -> "New Reply";
             case "POST_DELETED" -> "Post Removed";
             case "POST_REJECTED" -> "Post Rejected";
+            case "POST_APPROVED" -> "Post Approved"; // Added
             case "STATUS_CHANGED" -> "Account Status Update";
             default -> "New Notification";
         };
@@ -128,6 +129,7 @@ public class NotificationService {
         String preview = request.getPreviewText() != null ? request.getPreviewText() : "";
         if (request.getType().equals("POST_DELETED") || 
             request.getType().equals("POST_REJECTED") || 
+            request.getType().equals("POST_APPROVED") || // Added
             request.getType().equals("STATUS_CHANGED")) {
             return preview;
         }
