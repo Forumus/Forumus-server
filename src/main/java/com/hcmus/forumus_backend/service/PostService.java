@@ -7,6 +7,7 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.genai.types.Part;
 import com.hcmus.forumus_backend.dto.post.PostDTO;
+import com.hcmus.forumus_backend.dto.post.PostSummaryResponse;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
 import com.hcmus.forumus_backend.dto.topic.TopicResponse;
 import com.hcmus.forumus_backend.listener.TopicsListener;
@@ -161,6 +162,69 @@ public class PostService {
         }
 
         return new PostValidationResponse(isValid, reasons);
+    }
+
+    /**
+     * Generates an AI-powered summary for a post.
+     * 
+     * @param postId The ID of the post to summarize
+     * @return PostSummaryResponse containing the summary or error message
+     */
+    public PostSummaryResponse summarizePost(String postId) {
+        System.out.println("Generating summary for Post ID: " + postId);
+        
+        try {
+            // Fetch post from Firestore
+            PostDTO post = getPostById(postId);
+            
+            if (post == null) {
+                System.out.println("Post not found for ID: " + postId);
+                return PostSummaryResponse.error("Post not found");
+            }
+            
+            String title = post.getTitle();
+            String content = post.getContent();
+            
+            // Truncate content if too long (max 5000 chars to avoid token limits)
+            if (content != null && content.length() > 5000) {
+                content = content.substring(0, 5000) + "...";
+            }
+            
+            System.out.println("Summarizing post - Title: " + title);
+            
+            // Build the summarization prompt
+            String prompt = """
+                Please provide a concise summary (2-3 sentences, max 100 words) of this forum post.
+                Focus on the main topic and key points. Be neutral and informative.
+                Write the summary in the same language as the post content.
+                
+                Title: "%s"
+                Content: "%s"
+                
+                Respond with ONLY the summary text, no JSON, no quotes, no formatting.
+                """.formatted(
+                    title != null ? title : "",
+                    content != null ? content : ""
+                );
+            
+            // Call Gemini API
+            String summary = askGemini(prompt);
+            
+            // Clean up the response (remove any quotes or extra whitespace)
+            summary = summary.trim();
+            if (summary.startsWith("\"") && summary.endsWith("\"")) {
+                summary = summary.substring(1, summary.length() - 1);
+            }
+            
+            System.out.println("Summary generated successfully: " + summary.substring(0, Math.min(50, summary.length())) + "...");
+            
+            return PostSummaryResponse.success(summary, false);
+            
+        } catch (Exception e) {
+            System.err.println("Error generating summary for post " + postId + ": " + e.getMessage());
+            e.printStackTrace();
+            return PostSummaryResponse.error("Failed to generate summary: " + e.getMessage());
+        }
     }
 
     public Map<String, Object> extractTopics(String title, String content) {
