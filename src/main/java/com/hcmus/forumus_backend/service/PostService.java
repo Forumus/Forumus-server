@@ -38,9 +38,10 @@ public class PostService {
     private final TopicsListener topicsListener;
     private final Firestore db;
     private final ObjectMapper objectMapper;
+    private final SummaryCacheService summaryCache;
 
     public PostService(Client geminiClient, GenerateContentConfig generateContentConfig, TopicService topicService,
-            TopicsListener topicsListener, Firestore db) {
+            TopicsListener topicsListener, Firestore db, SummaryCacheService summaryCache) {
         this.geminiClient = geminiClient;
         this.generateContentConfig = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText(instructionPrompt)))
@@ -48,6 +49,7 @@ public class PostService {
         this.topicsListener = topicsListener;
         this.db = db;
         this.objectMapper = new ObjectMapper();
+        this.summaryCache = summaryCache;
     }
 
     public PostDTO getPostById(String postId) throws ExecutionException, InterruptedException {
@@ -165,13 +167,21 @@ public class PostService {
     }
 
     /**
-     * Generates an AI-powered summary for a post.
+     * Generates an AI-powered summary for a post with intelligent caching.
+     * 
+     * <p>Caching Strategy:
+     * <ul>
+     *   <li>Computes content hash to detect changes</li>
+     *   <li>Returns cached summary if content unchanged and cache valid</li>
+     *   <li>Regenerates summary only when content changes or cache expires</li>
+     *   <li>Stores new summaries in cache with content hash for validation</li>
+     * </ul>
      * 
      * @param postId The ID of the post to summarize
      * @return PostSummaryResponse containing the summary or error message
      */
     public PostSummaryResponse summarizePost(String postId) {
-        System.out.println("Generating summary for Post ID: " + postId);
+        System.out.println("Summary request for Post ID: " + postId);
         
         try {
             // Fetch post from Firestore
@@ -185,9 +195,23 @@ public class PostService {
             String title = post.getTitle();
             String content = post.getContent();
             
+            // Compute content hash for cache validation
+            String contentHash = summaryCache.computeContentHash(title, content);
+            
+            // Check cache first
+            SummaryCacheService.CachedSummary cached = summaryCache.get(postId, contentHash);
+            if (cached != null) {
+                System.out.println("Cache HIT for post " + postId + " (hitCount: " + cached.getHitCount() + ")");
+                return PostSummaryResponse.success(cached.getSummary(), true, contentHash, cached.getCreatedAt());
+            }
+            
+            System.out.println("Cache MISS for post " + postId + " - generating new summary");
+            System.out.println("Cache status: " + summaryCache.getCacheStatusSummary());
+            
             // Truncate content if too long (max 5000 chars to avoid token limits)
+            String truncatedContent = content;
             if (content != null && content.length() > 5000) {
-                content = content.substring(0, 5000) + "...";
+                truncatedContent = content.substring(0, 5000) + "...";
             }
             
             System.out.println("Summarizing post - Title: " + title);
@@ -204,7 +228,7 @@ public class PostService {
                 Respond with ONLY the summary text, no JSON, no quotes, no formatting.
                 """.formatted(
                     title != null ? title : "",
-                    content != null ? content : ""
+                    truncatedContent != null ? truncatedContent : ""
                 );
             
             // Call Gemini API
@@ -216,15 +240,40 @@ public class PostService {
                 summary = summary.substring(1, summary.length() - 1);
             }
             
-            System.out.println("Summary generated successfully: " + summary.substring(0, Math.min(50, summary.length())) + "...");
+            // Store in cache
+            long generatedAt = System.currentTimeMillis();
+            summaryCache.put(postId, summary, contentHash);
             
-            return PostSummaryResponse.success(summary, false);
+            System.out.println("Summary generated and cached: " + summary.substring(0, Math.min(50, summary.length())) + "...");
+            System.out.println("New cache status: " + summaryCache.getCacheStatusSummary());
+            
+            return PostSummaryResponse.success(summary, false, contentHash, generatedAt);
             
         } catch (Exception e) {
             System.err.println("Error generating summary for post " + postId + ": " + e.getMessage());
             e.printStackTrace();
             return PostSummaryResponse.error("Failed to generate summary: " + e.getMessage());
         }
+    }
+
+    /**
+     * Invalidates the cached summary for a post.
+     * Call this when a post is updated.
+     * 
+     * @param postId The ID of the post to invalidate
+     */
+    public void invalidateSummaryCache(String postId) {
+        summaryCache.invalidate(postId);
+        System.out.println("Summary cache invalidated for post: " + postId);
+    }
+
+    /**
+     * Gets cache statistics for monitoring.
+     * 
+     * @return String with cache statistics
+     */
+    public String getSummaryCacheStats() {
+        return summaryCache.getCacheStatusSummary();
     }
 
     public Map<String, Object> extractTopics(String title, String content) {
