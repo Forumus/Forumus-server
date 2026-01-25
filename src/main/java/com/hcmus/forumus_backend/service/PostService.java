@@ -7,6 +7,7 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.genai.types.Part;
 import com.hcmus.forumus_backend.dto.post.PostDTO;
+import com.hcmus.forumus_backend.dto.post.PostSummaryResponse;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
 import com.hcmus.forumus_backend.dto.topic.TopicResponse;
 import com.hcmus.forumus_backend.listener.TopicsListener;
@@ -37,9 +38,10 @@ public class PostService {
     private final TopicsListener topicsListener;
     private final Firestore db;
     private final ObjectMapper objectMapper;
+    private final SummaryCacheService summaryCache;
 
     public PostService(Client geminiClient, GenerateContentConfig generateContentConfig, TopicService topicService,
-            TopicsListener topicsListener, Firestore db) {
+            TopicsListener topicsListener, Firestore db, SummaryCacheService summaryCache) {
         this.geminiClient = geminiClient;
         this.generateContentConfig = GenerateContentConfig.builder()
                 .systemInstruction(Content.fromParts(Part.fromText(instructionPrompt)))
@@ -47,6 +49,7 @@ public class PostService {
         this.topicsListener = topicsListener;
         this.db = db;
         this.objectMapper = new ObjectMapper();
+        this.summaryCache = summaryCache;
     }
 
     public PostDTO getPostById(String postId) throws ExecutionException, InterruptedException {
@@ -161,6 +164,116 @@ public class PostService {
         }
 
         return new PostValidationResponse(isValid, reasons);
+    }
+
+    /**
+     * Generates an AI-powered summary for a post with intelligent caching.
+     * 
+     * <p>Caching Strategy:
+     * <ul>
+     *   <li>Computes content hash to detect changes</li>
+     *   <li>Returns cached summary if content unchanged and cache valid</li>
+     *   <li>Regenerates summary only when content changes or cache expires</li>
+     *   <li>Stores new summaries in cache with content hash for validation</li>
+     * </ul>
+     * 
+     * @param postId The ID of the post to summarize
+     * @return PostSummaryResponse containing the summary or error message
+     */
+    public PostSummaryResponse summarizePost(String postId) {
+        System.out.println("Summary request for Post ID: " + postId);
+        
+        try {
+            // Fetch post from Firestore
+            PostDTO post = getPostById(postId);
+            
+            if (post == null) {
+                System.out.println("Post not found for ID: " + postId);
+                return PostSummaryResponse.error("Post not found");
+            }
+            
+            String title = post.getTitle();
+            String content = post.getContent();
+            
+            // Compute content hash for cache validation
+            String contentHash = summaryCache.computeContentHash(title, content);
+            
+            // Check cache first
+            SummaryCacheService.CachedSummary cached = summaryCache.get(postId, contentHash);
+            if (cached != null) {
+                System.out.println("Cache HIT for post " + postId + " (hitCount: " + cached.getHitCount() + ")");
+                return PostSummaryResponse.success(cached.getSummary(), true, contentHash, cached.getCreatedAt());
+            }
+            
+            System.out.println("Cache MISS for post " + postId + " - generating new summary");
+            System.out.println("Cache status: " + summaryCache.getCacheStatusSummary());
+            
+            // Truncate content if too long (max 5000 chars to avoid token limits)
+            String truncatedContent = content;
+            if (content != null && content.length() > 5000) {
+                truncatedContent = content.substring(0, 5000) + "...";
+            }
+            
+            System.out.println("Summarizing post - Title: " + title);
+            
+            // Build the summarization prompt
+            String prompt = """
+                Please provide a concise summary (2-3 sentences, max 100 words) of this forum post.
+                Focus on the main topic and key points. Be neutral and informative.
+                Write the summary in the same language as the post content.
+                
+                Title: "%s"
+                Content: "%s"
+                
+                Respond with ONLY the summary text, no JSON, no quotes, no formatting.
+                """.formatted(
+                    title != null ? title : "",
+                    truncatedContent != null ? truncatedContent : ""
+                );
+            
+            // Call Gemini API
+            String summary = askGemini(prompt);
+            
+            // Clean up the response (remove any quotes or extra whitespace)
+            summary = summary.trim();
+            if (summary.startsWith("\"") && summary.endsWith("\"")) {
+                summary = summary.substring(1, summary.length() - 1);
+            }
+            
+            // Store in cache
+            long generatedAt = System.currentTimeMillis();
+            summaryCache.put(postId, summary, contentHash);
+            
+            System.out.println("Summary generated and cached: " + summary.substring(0, Math.min(50, summary.length())) + "...");
+            System.out.println("New cache status: " + summaryCache.getCacheStatusSummary());
+            
+            return PostSummaryResponse.success(summary, false, contentHash, generatedAt);
+            
+        } catch (Exception e) {
+            System.err.println("Error generating summary for post " + postId + ": " + e.getMessage());
+            e.printStackTrace();
+            return PostSummaryResponse.error("Failed to generate summary: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Invalidates the cached summary for a post.
+     * Call this when a post is updated.
+     * 
+     * @param postId The ID of the post to invalidate
+     */
+    public void invalidateSummaryCache(String postId) {
+        summaryCache.invalidate(postId);
+        System.out.println("Summary cache invalidated for post: " + postId);
+    }
+
+    /**
+     * Gets cache statistics for monitoring.
+     * 
+     * @return String with cache statistics
+     */
+    public String getSummaryCacheStats() {
+        return summaryCache.getCacheStatusSummary();
     }
 
     public Map<String, Object> extractTopics(String title, String content) {

@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcmus.forumus_backend.dto.GeminiAskResponse;
 import com.hcmus.forumus_backend.dto.post.PostIdRequest;
 import com.hcmus.forumus_backend.dto.post.PostDTO;
+import com.hcmus.forumus_backend.dto.post.PostSummaryRequest;
+import com.hcmus.forumus_backend.dto.post.PostSummaryResponse;
 import com.hcmus.forumus_backend.dto.post.PostValidationRequest;
 import com.hcmus.forumus_backend.dto.post.PostValidationResponse;
 
@@ -83,6 +85,18 @@ public class PostController {
             e.printStackTrace();
             return new PostValidationResponse(false, "Error fetching post: " + e.getMessage());
         }
+    }
+
+    /**
+     * Generates an AI-powered summary for a post.
+     * 
+     * @param request PostSummaryRequest containing the postId
+     * @return PostSummaryResponse with the generated summary or error message
+     */
+    @PostMapping("/summarize")
+    public PostSummaryResponse summarizePost(@RequestBody PostSummaryRequest request) {
+        System.out.println("Summarizing Post ID: " + request.getPostId());
+        return PostService.summarizePost(request.getPostId());
     }
     
     // ... (rest of file)
