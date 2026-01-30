@@ -34,13 +34,6 @@ public class EmailService {
     this.mailSender = mailSender;
   }
 
-  /**
-   * Send OTP email to user
-   *
-   * @param recipientEmail The recipient's email address
-   * @param otpCode        The OTP code to send
-   * @return true if email sent successfully, false otherwise
-   */
   public boolean sendOTPEmail(String recipientEmail, String otpCode) {
     try {
       logger.debug("Starting OTP email send to: {}", recipientEmail);
@@ -75,13 +68,6 @@ public class EmailService {
     }
   }
 
-  /**
-   * Send welcome email after successful verification
-   *
-   * @param recipientEmail The recipient's email address
-   * @param userName       The user's name
-   * @return true if email sent successfully, false otherwise
-   */
   public boolean sendWelcomeEmail(String recipientEmail, String userName) {
     try {
       logger.debug("Starting welcome email send to: {}", recipientEmail);
@@ -107,15 +93,6 @@ public class EmailService {
     }
   }
 
-  /**
-   * Send report email about user's account status
-   *
-   * @param recipientEmail The recipient's email address
-   * @param userName       The user's name
-   * @param userStatus     The user's current status
-   * @param reportedPosts  List of reported posts with details
-   * @return true if email sent successfully, false otherwise
-   */
   public boolean sendReportEmail(String recipientEmail, String userName, UserStatus userStatus,
       List<Map<String, String>> reportedPosts) {
     try {
@@ -143,13 +120,6 @@ public class EmailService {
     }
   }
 
-  /**
-   * Generate HTML email template for OTP
-   *
-   * @param otpCode        The OTP code
-   * @param recipientEmail The recipient's email
-   * @return HTML email content
-   */
   private String createOTPEmailHTML(String otpCode, String recipientEmail) {
     String template = """
         <!DOCTYPE html>
@@ -184,12 +154,6 @@ public class EmailService {
     return String.format(template, recipientEmail, otpCode);
   }
 
-  /**
-   * Generate HTML email template for welcome email
-   *
-   * @param userName The user's name
-   * @return HTML email content
-   */
   private String createWelcomeEmailHTML(String userName) {
     String template = """
         <!DOCTYPE html>
@@ -257,7 +221,7 @@ public class EmailService {
         statusMessage = "Your account has been banned due to multiple violations.";
         break;
       default:
-        statusColor = "#6c757d";
+        statusColor = "#6c757d"; // Gray
         statusBadgeColor = "#e2e3e5";
         statusMessage = "Account status updated.";
     }

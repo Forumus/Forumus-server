@@ -21,13 +21,6 @@ public class EmailController {
         this.emailService = emailService;
     }
 
-    /**
-     * Send OTP verification email
-     * POST /api/email/send-otp
-     *
-     * @param request EmailRequest containing recipientEmail and otpCode
-     * @return EmailResponse with success status and message
-     */
     @PostMapping("/send-otp")
     public ResponseEntity<EmailResponse> sendOTPEmail(@RequestBody EmailRequest request) {
         // Validate input
@@ -42,6 +35,7 @@ public class EmailController {
         }
 
         try {
+            // Send OTP email
             boolean sent = emailService.sendOTPEmail(request.getRecipientEmail(), request.getOtpCode());
 
             if (sent) {
@@ -56,13 +50,6 @@ public class EmailController {
         }
     }
 
-    /**
-     * Send welcome email after successful verification
-     * POST /api/email/send-welcome
-     *
-     * @param request WelcomeEmailRequest containing recipientEmail and userName
-     * @return EmailResponse with success status and message
-     */
     @PostMapping("/send-welcome")
     public ResponseEntity<EmailResponse> sendWelcomeEmail(@RequestBody WelcomeEmailRequest request) {
         // Validate input
@@ -77,6 +64,7 @@ public class EmailController {
         }
 
         try {
+            // Send welcome email
             boolean sent = emailService.sendWelcomeEmail(request.getRecipientEmail(), request.getUserName());
 
             if (sent) {
@@ -91,14 +79,6 @@ public class EmailController {
         }
     }
 
-    /**
-     * Send report email about user's account status
-     * POST /api/email/send-report
-     *
-     * @param request ReportEmailRequest containing recipientEmail, userName,
-     *                userStatus, and reportedPosts
-     * @return EmailResponse with success status and message
-     */
     @PostMapping("/send-report")
     public ResponseEntity<EmailResponse> sendReportEmail(@RequestBody ReportEmailRequest request) {
         // Validate input
@@ -121,6 +101,7 @@ public class EmailController {
             // Parse user status
             UserStatus userStatus = UserStatus.fromString(request.getUserStatus());
 
+            // Send report email
             boolean sent = emailService.sendReportEmail(
                     request.getRecipientEmail(),
                     request.getUserName(),

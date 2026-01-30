@@ -1,11 +1,5 @@
 package com.hcmus.forumus_backend.dto.post;
 
-/**
- * Response DTO for AI-generated post summaries with caching support.
- * 
- * <p>The contentHash field allows clients to detect when content has changed
- * and invalidate their local cache accordingly.</p>
- */
 public class PostSummaryResponse {
     private boolean success;
     private String summary;
@@ -36,25 +30,16 @@ public class PostSummaryResponse {
         this.expiresAt = expiresAt;
     }
 
-    /**
-     * Factory method for successful summary response with cache metadata.
-     */
     public static PostSummaryResponse success(String summary, boolean cached, String contentHash, Long generatedAt) {
         // Cache expires in 24 hours
         Long expiresAt = generatedAt != null ? generatedAt + (24 * 60 * 60 * 1000) : null;
         return new PostSummaryResponse(true, summary, null, cached, contentHash, generatedAt, expiresAt);
     }
 
-    /**
-     * Factory method for successful summary response (legacy support).
-     */
     public static PostSummaryResponse success(String summary, boolean cached) {
         return new PostSummaryResponse(true, summary, null, cached, null, System.currentTimeMillis(), null);
     }
 
-    /**
-     * Factory method for error response.
-     */
     public static PostSummaryResponse error(String errorMessage) {
         return new PostSummaryResponse(false, null, errorMessage, false, null, null, null);
     }

@@ -8,31 +8,11 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Service for sending Firebase Cloud Messaging notifications
- * 
- * This service handles sending push notifications to Android clients
- * when new chat messages are received.
- */
 @Service
 public class FCMService {
 
     private static final Logger logger = LoggerFactory.getLogger(FCMService.class);
 
-    /**
-     * Send a chat message notification to a specific device
-     * 
-     * @param fcmToken                The recipient's FCM token
-     * @param senderName              The sender's full name (will be notification
-     *                                title)
-     * @param messageContent          The message content (will be notification
-     *                                body)
-     * @param chatId                  The chat ID
-     * @param senderId                The sender's user ID
-     * @param senderEmail             The sender's email
-     * @param senderProfilePictureUrl The sender's profile picture URL
-     * @return true if sent successfully, false otherwise
-     */
     public boolean sendChatNotification(
             String fcmToken,
             String senderName,
@@ -100,9 +80,6 @@ public class FCMService {
         }
     }
 
-    /**
-     * Send notification for image message
-     */
     public boolean sendImageMessageNotification(
             String fcmToken,
             String senderName,
@@ -129,9 +106,6 @@ public class FCMService {
                 senderProfilePictureUrl);
     }
 
-    /**
-     * Send notification to multiple devices (for group chats)
-     */
     public void sendMulticastNotification(
             java.util.List<String> fcmTokens,
             String senderName,
@@ -177,15 +151,7 @@ public class FCMService {
             logger.error("Failed to send multicast notification", e);
         }
     }
-    /**
-     * Send a general notification to a specific device
-     * 
-     * @param fcmToken The recipient's FCM token
-     * @param title    The notification title
-     * @param body     The notification body
-     * @param data     Additional data payload
-     * @return true if sent successfully, false otherwise
-     */
+
     public boolean sendGeneralNotification(String fcmToken, String title, String body, Map<String, String> data) {
         try {
             // Create notification

@@ -95,9 +95,6 @@ public class FirestoreMessageListener {
         }
     }
 
-    /**
-     * Handle new message and send notification
-     */
     private void handleNewMessage(DocumentSnapshot messageDoc) {
         try {
             if (!fcmService.isPresent() || !userService.isPresent()) {
@@ -208,9 +205,6 @@ public class FirestoreMessageListener {
         }
     }
 
-    /**
-     * Stop listening when Spring Boot application shuts down
-     */
     @PreDestroy
     public void stopListening() {
         if (listenerRegistration != null) {

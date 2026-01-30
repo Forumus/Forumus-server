@@ -1,8 +1,5 @@
 package com.hcmus.forumus_backend.dto.post;
 
-/**
- * Request DTO for generating an AI summary of a post.
- */
 public class PostSummaryRequest {
     private String postId;
 

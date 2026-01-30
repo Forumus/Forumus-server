@@ -6,29 +6,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Base64;
 
-/**
- * Service for caching AI-generated summaries to avoid redundant API calls.
- * 
- * <p>Architecture Overview:
- * <ul>
- *   <li>Uses in-memory ConcurrentHashMap for fast, thread-safe caching</li>
- *   <li>Tracks content hash to detect when post content changes</li>
- *   <li>Automatically invalidates cache when content changes</li>
- *   <li>Supports TTL (Time-To-Live) for cache entries</li>
- * </ul>
- * 
- * <p>Cache Entry Structure:
- * <ul>
- *   <li>Key: postId</li>
- *   <li>Value: CachedSummary containing summary, contentHash, and timestamp</li>
- * </ul>
- */
 @Service
 public class SummaryCacheService {
 
-    /**
-     * Internal class representing a cached summary entry.
-     */
     public static class CachedSummary {
         private final String summary;
         private final String contentHash;
@@ -74,9 +54,6 @@ public class SummaryCacheService {
         }
     }
 
-    /**
-     * Cache statistics for monitoring and optimization.
-     */
     public static class CacheStats {
         private long hits;
         private long misses;
@@ -108,13 +85,6 @@ public class SummaryCacheService {
     // Cache statistics
     private final CacheStats stats = new CacheStats();
 
-    /**
-     * Computes a SHA-256 hash of the given content.
-     * Used to detect when post content has changed.
-     *
-     * @param content The content to hash
-     * @return Base64-encoded hash string
-     */
     public String computeContentHash(String title, String content) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -127,13 +97,6 @@ public class SummaryCacheService {
         }
     }
 
-    /**
-     * Gets a cached summary if it exists and is still valid.
-     *
-     * @param postId The post ID
-     * @param currentContentHash The current content hash to validate against
-     * @return The cached summary if valid, null otherwise
-     */
     public CachedSummary get(String postId, String currentContentHash) {
         CachedSummary cached = cache.get(postId);
         
@@ -164,13 +127,6 @@ public class SummaryCacheService {
         return cached;
     }
 
-    /**
-     * Stores a summary in the cache.
-     *
-     * @param postId The post ID
-     * @param summary The generated summary
-     * @param contentHash The content hash at the time of generation
-     */
     public void put(String postId, String summary, String contentHash) {
         // Evict old entries if cache is full
         if (cache.size() >= MAX_CACHE_SIZE) {
@@ -180,47 +136,22 @@ public class SummaryCacheService {
         cache.put(postId, new CachedSummary(summary, contentHash));
     }
 
-    /**
-     * Invalidates a specific cache entry.
-     *
-     * @param postId The post ID to invalidate
-     */
     public void invalidate(String postId) {
         cache.remove(postId);
     }
 
-    /**
-     * Clears the entire cache.
-     */
     public void clear() {
         cache.clear();
     }
 
-    /**
-     * Gets the current cache size.
-     *
-     * @return Number of cached entries
-     */
     public int size() {
         return cache.size();
     }
 
-    /**
-     * Gets cache statistics.
-     *
-     * @return CacheStats object with hit/miss information
-     */
     public CacheStats getStats() {
         return stats;
     }
 
-    /**
-     * Checks if a post has a valid cached summary.
-     *
-     * @param postId The post ID
-     * @param currentContentHash The current content hash
-     * @return true if a valid cache entry exists
-     */
     public boolean hasValidCache(String postId, String currentContentHash) {
         CachedSummary cached = cache.get(postId);
         if (cached == null) {
@@ -229,10 +160,6 @@ public class SummaryCacheService {
         return cached.getContentHash().equals(currentContentHash) && !cached.isExpired(DEFAULT_TTL_MILLIS);
     }
 
-    /**
-     * Evicts the oldest 10% of cache entries when cache is full.
-     * Uses last-accessed time for LRU-like behavior.
-     */
     private void evictOldestEntries() {
         int entriesToEvict = MAX_CACHE_SIZE / 10; // Evict 10%
         
@@ -245,11 +172,6 @@ public class SummaryCacheService {
             });
     }
 
-    /**
-     * Gets a summary of the cache state for monitoring.
-     *
-     * @return String describing cache state
-     */
     public String getCacheStatusSummary() {
         return String.format(
             "Cache Status: size=%d, hits=%d, misses=%d, hitRate=%.2f%%, invalidations=%d, evictions=%d",

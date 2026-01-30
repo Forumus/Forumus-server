@@ -37,7 +37,7 @@ public class FirebaseConfig {
                 Resource resource = resourceLoader.getResource(serviceAccountPath);
                 serviceAccountStream = resource.getInputStream();
             } else {
-                // Treat as absolute file path
+                // Use absolute file path
                 serviceAccountStream = new FileInputStream(serviceAccountPath);
             }
 
@@ -52,7 +52,7 @@ public class FirebaseConfig {
 
     @Bean
     Firestore firestore() throws IOException {
-        // Ensure Firebase is initialized first
+        // Initialize Firebase first
         initializeFirebase();
         return FirestoreClient.getFirestore();
     }

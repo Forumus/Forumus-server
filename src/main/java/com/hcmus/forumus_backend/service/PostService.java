@@ -94,6 +94,7 @@ public class PostService {
 
     public String askGemini(String prompt) {
         try {
+            // Call Gemini API asynchronously with timeout
             CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
                 GenerateContentResponse response = geminiClient.models.generateContent(
                         GEMINI_MODEL_NAME,
@@ -166,20 +167,6 @@ public class PostService {
         return new PostValidationResponse(isValid, reasons);
     }
 
-    /**
-     * Generates an AI-powered summary for a post with intelligent caching.
-     * 
-     * <p>Caching Strategy:
-     * <ul>
-     *   <li>Computes content hash to detect changes</li>
-     *   <li>Returns cached summary if content unchanged and cache valid</li>
-     *   <li>Regenerates summary only when content changes or cache expires</li>
-     *   <li>Stores new summaries in cache with content hash for validation</li>
-     * </ul>
-     * 
-     * @param postId The ID of the post to summarize
-     * @return PostSummaryResponse containing the summary or error message
-     */
     public PostSummaryResponse summarizePost(String postId) {
         System.out.println("Summary request for Post ID: " + postId);
         
@@ -256,22 +243,11 @@ public class PostService {
         }
     }
 
-    /**
-     * Invalidates the cached summary for a post.
-     * Call this when a post is updated.
-     * 
-     * @param postId The ID of the post to invalidate
-     */
     public void invalidateSummaryCache(String postId) {
         summaryCache.invalidate(postId);
         System.out.println("Summary cache invalidated for post: " + postId);
     }
 
-    /**
-     * Gets cache statistics for monitoring.
-     * 
-     * @return String with cache statistics
-     */
     public String getSummaryCacheStats() {
         return summaryCache.getCacheStatusSummary();
     }
