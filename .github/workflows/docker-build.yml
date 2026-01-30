@@ -2,11 +2,11 @@ name: Docker Build and Push
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ production ]
     tags:
       - 'v*.*.*'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ production ]
 
 env:
   REGISTRY: docker.io

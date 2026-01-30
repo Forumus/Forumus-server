@@ -2,8 +2,8 @@ name: Deploy to AWS EC2
 
 on:
   workflow_run:
-    workflows: ["Docker Build and Push"] # Must match the 'name' in docker-build.yml
-    branches: [main]
+    workflows: ["Docker Build and Push"]
+    branches: [production]
     types: [completed]
   workflow_dispatch:  # Allows manual trigger
 
